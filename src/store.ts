@@ -2,10 +2,11 @@ import { create } from "zustand";
 import { Curriculum, ProgressMap, Status, parseCurriculum } from "./core/curriculum";
 import { Session, localDay, addSessionToList, updateSessionInList, deleteSessionFromList } from "./core/study";
 import { ChecklistItem, sanitizeChecklists } from "./core/checklist";
+import { AutoTickEntry, findCourse, pickNextItem } from "./core/autotick";
 import { download, snapshot } from "./core/persist";
 
 const URL = "https://raw.githubusercontent.com/ossu/computer-science/JSON/curriculum.json";
-const K = { progress: "ossu.progress", notes: "ossu.notes", json: "ossu.curriculum", at: "ossu.updatedAt", last: "ossu.lastAccessed", sub: "ossu.activeSub", sessions: "ossu.sessions", timer: "ossu.timer", stopped: "ossu.stoppedAt", checklists: "ossu.checklists", lastReview: "ossu.lastReviewAt" };
+const K = { progress: "ossu.progress", notes: "ossu.notes", json: "ossu.curriculum", at: "ossu.updatedAt", last: "ossu.lastAccessed", sub: "ossu.activeSub", sessions: "ossu.sessions", timer: "ossu.timer", stopped: "ossu.stoppedAt", checklists: "ossu.checklists", lastReview: "ossu.lastReviewAt", autoTickLog: "ossu.autoTickLog" };
 
 const seedReviewTimestamp = (): string => {
   const stored = read<string | null>(K.lastReview, null);
@@ -35,6 +36,8 @@ interface State {
   backupNow: () => void;
   lastReviewAt: string;
   dismissReview: () => void;
+  autoTickLog: AutoTickEntry[];
+  autoComplete: (courseHint: string, itemHint?: string) => void;
   forceReview: () => void;
   addSession: (minutes: number, courseId: string, day?: string) => void;
   updateSession: (index: number, patch: Partial<Session>) => void;
@@ -44,12 +47,12 @@ interface State {
 }
 
 export const useStore = create<State>((set, get) => ({
-  curriculum: null, progress: {}, notes: {}, lastAccessed: {}, activeSub: null, sessions: [], timer: null, stoppedAt: {}, checklists: {}, lastReviewAt: seedReviewTimestamp(), updatedAt: null, banner: null, fatal: null,
+  curriculum: null, progress: {}, notes: {}, lastAccessed: {}, activeSub: null, sessions: [], timer: null, stoppedAt: {}, checklists: {}, lastReviewAt: seedReviewTimestamp(), autoTickLog: read<AutoTickEntry[]>(K.autoTickLog, []), updatedAt: null, banner: null, fatal: null,
   async init() {
     set({
       progress: read<ProgressMap>(K.progress, {}), notes: read<Record<string, string>>(K.notes, {}),
       lastAccessed: read<Record<string, string>>(K.last, {}), activeSub: localStorage.getItem(K.sub),
-      stoppedAt: read<Record<string, string>>(K.stopped, {}), checklists: sanitizeChecklists(read<unknown>(K.checklists, {})), lastReviewAt: seedReviewTimestamp(), sessions: read<Session[]>(K.sessions, []), timer: read<{ courseId: string; startedAt: string } | null>(K.timer, null),
+      stoppedAt: read<Record<string, string>>(K.stopped, {}), checklists: sanitizeChecklists(read<unknown>(K.checklists, {})), lastReviewAt: seedReviewTimestamp(), autoTickLog: read<AutoTickEntry[]>(K.autoTickLog, []), sessions: read<Session[]>(K.sessions, []), timer: read<{ courseId: string; startedAt: string } | null>(K.timer, null),
     });
     const cached = localStorage.getItem(K.json);
     if (cached) {
@@ -129,6 +132,26 @@ export const useStore = create<State>((set, get) => ({
     const lastReviewAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
     set({ lastReviewAt });
     write(K.lastReview, lastReviewAt);
+  },
+  autoComplete(courseHint, itemHint) {
+    const cur = get();
+    const courses = cur.curriculum?.courses ?? [];
+    const course = findCourse(courses, courseHint);
+    const at = new Date().toISOString();
+    const pushLog = (entry: AutoTickEntry) => {
+      const autoTickLog = [...cur.autoTickLog, entry].slice(-100);
+      set({ autoTickLog });
+      write(K.autoTickLog, autoTickLog);
+    };
+    if (!course) { pushLog({ at, courseHint, itemHint, status: "unmatched" }); return; }
+    const items = cur.checklists[course.id] ?? [];
+    const pick = pickNextItem(items, itemHint);
+    if (!pick) { pushLog({ at, courseHint, courseId: course.id, itemHint, status: "no-items" }); return; }
+    const checklists = { ...cur.checklists, [course.id]: items.map((i) => (i.id === pick.id ? { ...i, done: true } : i)) };
+    set({ checklists });
+    write(K.checklists, checklists);
+    pushLog({ at, courseHint, courseId: course.id, itemHint, itemId: pick.id, itemLabel: pick.label, status: "ticked" });
+    cur.touch(course.id);
   },
   dismissReview() {
     const lastReviewAt = new Date().toISOString();

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 const openUrl = (u: string) => window.open(u, "_blank", "noopener");
 import { formatDistanceToNow } from "date-fns";
 import { Check, Circle, Download, ExternalLink, RefreshCw, Search, Upload } from "lucide-react";
@@ -7,6 +7,7 @@ import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
 import HistoryPanel from "./HistoryPanel";
 import ReviewPrompt from "./ReviewPrompt";
+import AutoTickLog from "./AutoTickLog";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
 const LABEL: Record<Status, string> = { not_started: "Not started", in_progress: "In progress", completed: "Completed", skipped: "Skipped" };
@@ -53,6 +54,15 @@ export default function App() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [forceReview, setForceReview] = useState(false);
   const search = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!curriculum) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("ossu_auto") !== "1") return;
+    const course = params.get("course") ?? "";
+    const item = params.get("item") ?? "";
+    if (!course) return;
+    useStore.getState().autoComplete(course, item || undefined);
+  }, [curriculum]);
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "/" && document.activeElement?.tagName !== "TEXTAREA" && document.activeElement !== search.current) { e.preventDefault(); search.current?.focus(); } };
@@ -90,6 +100,7 @@ export default function App() {
           <div className="mt-4 border-t border-stone-300 pt-3 dark:border-stone-700">
             <button onClick={() => setForceReview(true)} className="text-xs underline opacity-70 hover:opacity-100">Review now</button>
             <HistoryPanel />
+            <AutoTickLog />
           </div>
         </nav>
         <main className="flex-1 space-y-3 overflow-y-auto p-4">
