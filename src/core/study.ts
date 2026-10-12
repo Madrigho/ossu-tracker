@@ -58,3 +58,32 @@ export function estimateFinish(hours: number, from: Date): Date | null {
 }
 export const minutesForCourse = (s: Session[], courseId: string) =>
   s.filter((x) => x.courseId === courseId).reduce((a, x) => a + x.minutes, 0);
+
+// ossu/session-helpers
+export const addSessionToList = (
+  sessions: Session[],
+  minutes: number,
+  courseId: string,
+  day: string
+): Session[] => [
+  ...sessions,
+  { courseId, day, minutes: Math.max(1, Math.round(minutes)) },
+];
+
+export const updateSessionInList = (
+  sessions: Session[],
+  index: number,
+  patch: Partial<Session>
+): Session[] =>
+  sessions.map((s, i) =>
+    i === index
+      ? {
+          ...s,
+          ...patch,
+          minutes: Math.max(1, Math.round(patch.minutes ?? s.minutes)),
+        }
+      : s
+  );
+
+export const deleteSessionFromList = (sessions: Session[], index: number): Session[] =>
+  sessions.filter((_, i) => i !== index);

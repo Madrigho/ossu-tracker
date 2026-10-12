@@ -5,6 +5,7 @@ import { Check, Circle, Download, ExternalLink, RefreshCw, Search, Upload } from
 import { useStore } from "./store";
 import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
+import HistoryPanel from "./HistoryPanel";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
 const LABEL: Record<Status, string> = { not_started: "Not started", in_progress: "In progress", completed: "Completed", skipped: "Skipped" };
@@ -99,6 +100,7 @@ export default function App() {
           {visible.length === 0 ? <p className="text-stone-500">No courses match.</p> : visible.map((c) => <CourseCard key={c.id} c={c} />)}
         </main>
       </div>
+      <HistoryPanel />{/* ossu/history-mount */}
     </div>
   );
 }

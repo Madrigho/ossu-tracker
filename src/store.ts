@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Curriculum, ProgressMap, Status, parseCurriculum } from "./core/curriculum";
-import { Session, localDay } from "./core/study";
+import { Session, localDay, addSessionToList, updateSessionInList, deleteSessionFromList } from "./core/study";
 import { ChecklistItem, sanitizeChecklists } from "./core/checklist";
 import { download, snapshot } from "./core/persist";
 
@@ -25,6 +25,9 @@ interface State {
   checklists: Record<string, ChecklistItem[]>; setChecklist: (courseId: string, items: ChecklistItem[]) => void;
   rehydrate: () => void;
   backupNow: () => void;
+  addSession: (minutes: number, courseId: string, day?: string) => void;
+  updateSession: (index: number, patch: Partial<Session>) => void;
+  deleteSession: (index: number) => void;
   startTimer: (id: string) => void; stopTimer: () => void; cancelTimer: () => void;
   exportJson: () => string; importJson: (text: string) => void;
 }
@@ -97,6 +100,19 @@ export const useStore = create<State>((set, get) => ({
     download(`ossu-backup-${stamp}.json`, JSON.stringify(
       { version: 1, exportedAt: new Date().toISOString(), progress, notes, lastAccessed, sessions, stoppedAt, checklists },
       null, 2));
+  },
+  addSession(minutes, courseId, day) {
+    const sessions = addSessionToList(get().sessions, minutes, courseId, day ?? localDay(new Date()));
+    set({ sessions }); write(K.sessions, sessions);
+    get().touch(courseId);
+  },
+  updateSession(index, patch) {
+    const sessions = updateSessionInList(get().sessions, index, patch);
+    set({ sessions }); write(K.sessions, sessions);
+  },
+  deleteSession(index) {
+    const sessions = deleteSessionFromList(get().sessions, index);
+    set({ sessions }); write(K.sessions, sessions);
   },
   setStoppedAt(id, text) {
     const stoppedAt = { ...get().stoppedAt, [id]: text };
