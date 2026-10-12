@@ -1,13 +1,15 @@
 import { useStore } from "./store";
 import { reviewDue } from "./core/review";
+
+type Props = { courses?: Course[]; force?: boolean; onDone?: () => void };
 import { toggleItem } from "./core/checklist";
 import { Course } from "./core/curriculum";
 
-export default function ReviewPrompt({ courses }: { courses?: Course[] } = {}) {
+export default function ReviewPrompt({ courses, force, onDone }: Props = {}) {
   const { checklists, setChecklist, lastReviewAt, dismissReview, progress } =
     useStore();
 
-  if (!reviewDue(lastReviewAt)) return null;
+  if (!force && !reviewDue(lastReviewAt)) return null;
 
   const nameFor = (id: string) =>
     courses?.find((c) => c.id === id)?.name ?? id;
@@ -37,7 +39,7 @@ export default function ReviewPrompt({ courses }: { courses?: Course[] } = {}) {
           </p>
         </div>
         <button
-          onClick={dismissReview}
+          onClick={() => { dismissReview(); onDone?.(); }}
           className="rounded border border-stone-300 px-2 py-1 text-sm hover:bg-white/40 dark:border-stone-600"
         >
           Done

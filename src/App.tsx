@@ -7,6 +7,7 @@ import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
 import HistoryPanel from "./HistoryPanel";
 import ReviewPrompt from "./ReviewPrompt";
+import { useState } from "react";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
 const LABEL: Record<Status, string> = { not_started: "Not started", in_progress: "In progress", completed: "Completed", skipped: "Skipped" };
@@ -14,6 +15,7 @@ const FILTERS = ["all", "not_started", "in_progress", "completed", "skipped"] as
 
 function CourseCard({ c }: { c: Course }) {
   const { progress, notes, curriculum, setStatus, setNotes, touch } = useStore();
+  const [forceReview, setForceReview] = useState(false);
   const status = progress[c.id] ?? "not_started";
   const [draft, setDraft] = useState(notes[c.id] ?? "");
   const blocked = !prerequisitesSatisfied(c, progress) && status === "not_started";
@@ -101,7 +103,8 @@ export default function App() {
           {visible.length === 0 ? <p className="text-stone-500">No courses match.</p> : visible.map((c) => <CourseCard key={c.id} c={c} />)}
         </main>
       </div>
-      <ReviewPrompt />{/* ossu/review-mount */}
+      <ReviewPrompt force={forceReview} onDone={() => setForceReview(false)} />{/* ossu/review-mount */}
+      <button onClick={() => setForceReview(true)} className="mt-2 text-xs underline opacity-70 hover:opacity-100">Review now</button>{/* ossu/review-button */}
       <HistoryPanel />{/* ossu/history-mount */}
     </div>
   );

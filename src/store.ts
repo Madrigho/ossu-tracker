@@ -35,6 +35,7 @@ interface State {
   backupNow: () => void;
   lastReviewAt: string;
   dismissReview: () => void;
+  forceReview: () => void;
   addSession: (minutes: number, courseId: string, day?: string) => void;
   updateSession: (index: number, patch: Partial<Session>) => void;
   deleteSession: (index: number) => void;
@@ -123,6 +124,11 @@ export const useStore = create<State>((set, get) => ({
   deleteSession(index) {
     const sessions = deleteSessionFromList(get().sessions, index);
     set({ sessions }); write(K.sessions, sessions);
+  },
+  forceReview() {
+    const lastReviewAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    set({ lastReviewAt });
+    write(K.lastReview, lastReviewAt);
   },
   dismissReview() {
     const lastReviewAt = new Date().toISOString();
