@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS progress (
+  course_id TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT 'not_started',
+  notes TEXT DEFAULT '', started_at DATETIME, completed_at DATETIME, last_accessed_at DATETIME);
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS sync_log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, status TEXT, message TEXT);
