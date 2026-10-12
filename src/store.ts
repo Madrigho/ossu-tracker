@@ -5,7 +5,15 @@ import { ChecklistItem, sanitizeChecklists } from "./core/checklist";
 import { download, snapshot } from "./core/persist";
 
 const URL = "https://raw.githubusercontent.com/ossu/computer-science/JSON/curriculum.json";
-const K = { progress: "ossu.progress", notes: "ossu.notes", json: "ossu.curriculum", at: "ossu.updatedAt", last: "ossu.lastAccessed", sub: "ossu.activeSub", sessions: "ossu.sessions", timer: "ossu.timer", stopped: "ossu.stoppedAt", checklists: "ossu.checklists" };
+const K = { progress: "ossu.progress", notes: "ossu.notes", json: "ossu.curriculum", at: "ossu.updatedAt", last: "ossu.lastAccessed", sub: "ossu.activeSub", sessions: "ossu.sessions", timer: "ossu.timer", stopped: "ossu.stoppedAt", checklists: "ossu.checklists", lastReview: "ossu.lastReviewAt" };
+
+const seedReviewTimestamp = (): string => {
+  const stored = read<string | null>(K.lastReview, null);
+  if (stored) return stored;
+  const now = new Date().toISOString();
+  write(K.lastReview, now);
+  return now;
+};
 const STATUSES = ["not_started", "in_progress", "completed", "skipped"];
 
 const read = <T>(key: string, fallback: T): T => {
@@ -25,6 +33,8 @@ interface State {
   checklists: Record<string, ChecklistItem[]>; setChecklist: (courseId: string, items: ChecklistItem[]) => void;
   rehydrate: () => void;
   backupNow: () => void;
+  lastReviewAt: string;
+  dismissReview: () => void;
   addSession: (minutes: number, courseId: string, day?: string) => void;
   updateSession: (index: number, patch: Partial<Session>) => void;
   deleteSession: (index: number) => void;
@@ -33,12 +43,12 @@ interface State {
 }
 
 export const useStore = create<State>((set, get) => ({
-  curriculum: null, progress: {}, notes: {}, lastAccessed: {}, activeSub: null, sessions: [], timer: null, stoppedAt: {}, checklists: {}, updatedAt: null, banner: null, fatal: null,
+  curriculum: null, progress: {}, notes: {}, lastAccessed: {}, activeSub: null, sessions: [], timer: null, stoppedAt: {}, checklists: {}, lastReviewAt: seedReviewTimestamp(), updatedAt: null, banner: null, fatal: null,
   async init() {
     set({
       progress: read<ProgressMap>(K.progress, {}), notes: read<Record<string, string>>(K.notes, {}),
       lastAccessed: read<Record<string, string>>(K.last, {}), activeSub: localStorage.getItem(K.sub),
-      stoppedAt: read<Record<string, string>>(K.stopped, {}), checklists: sanitizeChecklists(read<unknown>(K.checklists, {})), sessions: read<Session[]>(K.sessions, []), timer: read<{ courseId: string; startedAt: string } | null>(K.timer, null),
+      stoppedAt: read<Record<string, string>>(K.stopped, {}), checklists: sanitizeChecklists(read<unknown>(K.checklists, {})), lastReviewAt: seedReviewTimestamp(), sessions: read<Session[]>(K.sessions, []), timer: read<{ courseId: string; startedAt: string } | null>(K.timer, null),
     });
     const cached = localStorage.getItem(K.json);
     if (cached) {
@@ -113,6 +123,11 @@ export const useStore = create<State>((set, get) => ({
   deleteSession(index) {
     const sessions = deleteSessionFromList(get().sessions, index);
     set({ sessions }); write(K.sessions, sessions);
+  },
+  dismissReview() {
+    const lastReviewAt = new Date().toISOString();
+    set({ lastReviewAt });
+    write(K.lastReview, lastReviewAt);
   },
   setStoppedAt(id, text) {
     const stoppedAt = { ...get().stoppedAt, [id]: text };

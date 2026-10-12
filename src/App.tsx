@@ -6,6 +6,7 @@ import { useStore } from "./store";
 import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
 import HistoryPanel from "./HistoryPanel";
+import ReviewPrompt from "./ReviewPrompt";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
 const LABEL: Record<Status, string> = { not_started: "Not started", in_progress: "In progress", completed: "Completed", skipped: "Skipped" };
@@ -100,6 +101,7 @@ export default function App() {
           {visible.length === 0 ? <p className="text-stone-500">No courses match.</p> : visible.map((c) => <CourseCard key={c.id} c={c} />)}
         </main>
       </div>
+      <ReviewPrompt />{/* ossu/review-mount */}
       <HistoryPanel />{/* ossu/history-mount */}
     </div>
   );
