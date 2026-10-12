@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 const openUrl = (u: string) => window.open(u, "_blank", "noopener");
 import { formatDistanceToNow } from "date-fns";
 import { Check, Circle, Download, ExternalLink, RefreshCw, Search, Upload } from "lucide-react";
@@ -7,7 +7,6 @@ import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
 import HistoryPanel from "./HistoryPanel";
 import ReviewPrompt from "./ReviewPrompt";
-import { useState } from "react";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
 const LABEL: Record<Status, string> = { not_started: "Not started", in_progress: "In progress", completed: "Completed", skipped: "Skipped" };
@@ -15,7 +14,6 @@ const FILTERS = ["all", "not_started", "in_progress", "completed", "skipped"] as
 
 function CourseCard({ c }: { c: Course }) {
   const { progress, notes, curriculum, setStatus, setNotes, touch } = useStore();
-  const [forceReview, setForceReview] = useState(false);
   const status = progress[c.id] ?? "not_started";
   const [draft, setDraft] = useState(notes[c.id] ?? "");
   const blocked = !prerequisitesSatisfied(c, progress) && status === "not_started";
@@ -53,6 +51,7 @@ export default function App() {
   const importRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
+  const [forceReview, setForceReview] = useState(false);
   const search = useRef<HTMLInputElement>(null);
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
@@ -61,7 +60,7 @@ export default function App() {
   }, []);
   const next = useMemo(() => (curriculum ? nextCourse(curriculum.courses, progress, lastAccessed) : null), [curriculum, progress, lastAccessed]);
   if (fatal) return <main className="p-8">Couldn't load the curriculum: {fatal}. <a className="underline" href="https://raw.githubusercontent.com/ossu/computer-science/JSON/curriculum.json">Open the raw file</a> <button className="underline" onClick={refresh}>Retry</button></main>;
-  if (!curriculum) return <main className="p-8">Loading curriculum…</main>;
+  if (!curriculum) return <main className="p-8">Loading curriculumâ€¦</main>;
 
   const activeId = curriculum.subsections.some((u) => u.id === activeSub) ? (activeSub as string) : curriculum.subsections[0].id;
   const q = query.trim().toLowerCase();
@@ -88,6 +87,10 @@ export default function App() {
                 <button key={u.id} onClick={() => { setActiveSub(u.id); setQuery(""); }} className={`mt-1 flex w-full justify-between rounded px-2 py-1 text-left ${u.id === activeId && !q ? "bg-stone-200 dark:bg-stone-800" : ""}`}>
                   <span>{u.name}</span><span className="tabular-nums text-stone-500">{progressPercent(curriculum.courses.filter((c) => c.subsectionId === u.id), progress)}%</span></button>))}
             </div>))}
+          <div className="mt-4 border-t border-stone-300 pt-3 dark:border-stone-700">
+            <button onClick={() => setForceReview(true)} className="text-xs underline opacity-70 hover:opacity-100">Review now</button>
+            <HistoryPanel />
+          </div>
         </nav>
         <main className="flex-1 space-y-3 overflow-y-auto p-4">
           <StudyPanel next={next} />
@@ -104,8 +107,6 @@ export default function App() {
         </main>
       </div>
       <ReviewPrompt force={forceReview} onDone={() => setForceReview(false)} />{/* ossu/review-mount */}
-      <button onClick={() => setForceReview(true)} className="mt-2 text-xs underline opacity-70 hover:opacity-100">Review now</button>{/* ossu/review-button */}
-      <HistoryPanel />{/* ossu/history-mount */}
     </div>
   );
 }

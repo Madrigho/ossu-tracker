@@ -1,4 +1,4 @@
-import { useStore } from "./store";
+﻿import { useStore } from "./store";
 import { reviewDue } from "./core/review";
 
 type Props = { courses?: Course[]; force?: boolean; onDone?: () => void };
@@ -33,7 +33,7 @@ export default function ReviewPrompt({ courses, force, onDone }: Props = {}) {
     <div className="fixed left-1/2 top-2 z-50 w-[min(640px,calc(100vw-1rem))] -translate-x-1/2 rounded border border-emerald-600/50 bg-emerald-50 p-3 shadow-lg dark:border-emerald-500/40 dark:bg-emerald-950/95">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-semibold">Weekly review — what did you finish?</p>
+          <p className="font-semibold">Weekly review â€” what did you finish?</p>
           <p className="mt-0.5 text-sm text-stone-600 dark:text-stone-400">
             Tick items you completed since your last review. Changes save instantly.
           </p>
@@ -48,7 +48,10 @@ export default function ReviewPrompt({ courses, force, onDone }: Props = {}) {
       <div className="mt-2 max-h-[60vh] space-y-3 overflow-auto pr-1">
         {targets.map(({ courseId, items }) => (
           <div key={courseId}>
-            <p className="text-sm font-medium">{nameFor(courseId)}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">{nameFor(courseId)}</p>
+              <button onClick={() => { const fresh = useStore.getState().checklists[courseId] ?? []; setChecklist(courseId, fresh.map((it) => ({ ...it, done: true }))); }} className="text-xs underline opacity-70 hover:opacity-100">Mark all done</button>
+            </div>
             <ul className="mt-1 space-y-1">
               {items.map((i) => (
                 <li key={i.id} className="flex items-center gap-2 text-sm">
