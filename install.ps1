@@ -1,7 +1,8 @@
 ﻿$ErrorActionPreference = "Stop"
 
-$repo = "https://github.com/madrigho/ossu-tracker.git"
+$repo = "https://github.com/Madrigho/ossu-tracker.git"
 $dest = Join-Path $env:USERPROFILE "dev\ossu-tracker"
+$desktopBat = Join-Path ([Environment]::GetFolderPath("Desktop")) "OSSU Tracker.bat"
 
 Write-Host ""
 Write-Host "OSSU CS Progress Tracker - installer"
@@ -37,9 +38,18 @@ if (Test-Path $dest) {
 Write-Host "Installing dependencies (about one minute the first time)..."
 npm install --silent
 
+# Create a Desktop launcher
+$batBody = @"
+@echo off
+powershell -NoExit -ExecutionPolicy Bypass -Command "Set-Location `"$dest`"; Start-Process 'http://localhost:1420'; npm run dev"
+"@
+Set-Content -Path $desktopBat -Value $batBody -Encoding ascii
+Write-Host "Desktop launcher created: $desktopBat"
+
 Write-Host ""
 Write-Host "Starting the tracker at http://localhost:1420"
 Write-Host "Leave this window open while you use the tracker."
+Write-Host "Next time, just double-click 'OSSU Tracker.bat' on your Desktop."
 Write-Host "Press Ctrl+C to stop."
 Write-Host ""
 
