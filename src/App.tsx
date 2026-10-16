@@ -7,6 +7,7 @@ import StudyPanel from "./StudyPanel";
 import CourseProgress from "./CourseProgress";
 import HistoryPanel from "./HistoryPanel";
 import ReviewPrompt from "./ReviewPrompt";
+import FileSyncButton from "./FileSyncButton";
 import AutoTickLog from "./AutoTickLog";
 import { Course, Status, nextCourse, prerequisitesSatisfied, progressPercent } from "./core/curriculum";
 
@@ -86,6 +87,7 @@ export default function App() {
         <button onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([exportJson()], { type: "application/json" })); a.download = "ossu-progress.json"; a.click(); }} aria-label="Export progress" title="Export progress"><Download size={16} /></button>
         <button onClick={() => importRef.current?.click()} aria-label="Import progress" title="Import progress"><Upload size={16} /></button>
         <input ref={importRef} type="file" accept="application/json" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { importJson(await f.text()); } catch { alert("Not a valid progress export file."); } e.target.value = ""; }} />
+        <FileSyncButton />{/* ossu/file-sync-button */}
         <button onClick={refresh} title={updatedAt ? `Curriculum updated ${formatDistanceToNow(new Date(updatedAt))} ago` : "Refresh curriculum"} aria-label="Refresh curriculum"><RefreshCw size={16} /></button>
       </header>
       {banner && <p className="bg-amber-100 px-4 py-1 text-sm text-amber-900">{banner} <button className="underline" onClick={refresh}>Retry</button></p>}

@@ -3,11 +3,28 @@ import { Curriculum, ProgressMap, Status, parseCurriculum } from "./core/curricu
 import { Session, localDay, addSessionToList, updateSessionInList, deleteSessionFromList } from "./core/study";
 import { ChecklistItem, sanitizeChecklists } from "./core/checklist";
 import { AutoTickEntry, findCourse, pickNextItem } from "./core/autotick";
+import { writeToFile } from "./core/file-sync";
 import { download, snapshot } from "./core/persist";
 
 const URL = "https://raw.githubusercontent.com/ossu/computer-science/JSON/curriculum.json";
 const K = { progress: "ossu.progress", notes: "ossu.notes", json: "ossu.curriculum", at: "ossu.updatedAt", last: "ossu.lastAccessed", sub: "ossu.activeSub", sessions: "ossu.sessions", timer: "ossu.timer", stopped: "ossu.stoppedAt", checklists: "ossu.checklists", lastReview: "ossu.lastReviewAt", autoTickLog: "ossu.autoTickLog" };
 
+const serializeState = (s: ReturnType<typeof useStore.getState>) => JSON.stringify({
+  version: 1,
+  exportedAt: new Date().toISOString(),
+  progress: s.progress,
+  notes: s.notes,
+  lastAccessed: s.lastAccessed,
+  sessions: s.sessions,
+  stoppedAt: s.stoppedAt,
+  checklists: s.checklists,
+}, null, 2);
+
+const silentWrite = (s: ReturnType<typeof useStore.getState>) => {
+  try {
+    void writeToFile(serializeState(s)).catch(() => { /* permission lost - reconnect banner will show */ });
+  } catch { /* ignore */ }
+};
 const seedReviewTimestamp = (): string => {
   const stored = read<string | null>(K.lastReview, null);
   if (stored) return stored;
@@ -220,4 +237,19 @@ if (typeof window !== "undefined") {
       try { useStore.getState().backupNow(); } catch { /* ignore */ }
     }
   });
+}
+
+// ossu/file-sync-subscribe
+// Whenever any of the tracked state slices change, write them to the linked backup file.
+if (typeof window !== "undefined") {
+  try {
+    let lastSerialized = "";
+    useStore.subscribe(() => {
+      const s = useStore.getState();
+      const body = serializeState(s);
+      if (body === lastSerialized) return;
+      lastSerialized = body;
+      void writeToFile(body).catch(() => { /* not linked or permission lost */ });
+    });
+  } catch { /* ignore */ }
 }
